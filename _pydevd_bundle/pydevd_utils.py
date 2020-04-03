@@ -136,7 +136,7 @@ def get_clsname_for_code(code, frame):
             else:  # instance method
                 if hasattr(first_arg_obj, "__class__"):
                     first_arg_class = first_arg_obj.__class__
-                else: # old style class, fall back on type
+                else:  # old style class, fall back on type
                     first_arg_class = type(first_arg_obj)
             func_name = code.co_name
             if hasattr(first_arg_class, func_name):
@@ -299,3 +299,24 @@ def isinstance_checked(obj, cls):
     except:
         return False
 
+
+class ScopeRequest(object):
+
+    __slots__ = ['variable_reference', 'scope']
+
+    def __init__(self, variable_reference, scope):
+        assert scope in ('globals', 'locals')
+        self.variable_reference = variable_reference
+        self.scope = scope
+
+    def __eq__(self, o):
+        if isinstance(o, ScopeRequest):
+            return self.variable_reference == o.variable_reference and self.scope == o.scope
+
+        return False
+
+    def __ne__(self, o):
+        return not self == o
+
+    def __hash__(self):
+        return hash((self.variable_reference, self.scope))

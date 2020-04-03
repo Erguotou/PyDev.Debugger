@@ -357,8 +357,8 @@ class JsonFacade(object):
         scopes = scopes_response.body.scopes
         name_to_scopes = dict((scope['name'], pydevd_schema.Scope(**scope)) for scope in scopes)
 
-        assert len(scopes) == 1
-        assert sorted(name_to_scopes.keys()) == ['Locals']
+        assert len(scopes) == 2
+        assert sorted(name_to_scopes.keys()) == ['Globals', 'Locals']
         assert not name_to_scopes['Locals'].expensive
 
         return name_to_scopes

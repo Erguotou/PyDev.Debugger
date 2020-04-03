@@ -11,6 +11,7 @@ from _pydev_bundle import pydev_log
 from _pydevd_bundle import pydevd_vars
 from _pydev_bundle.pydev_imports import Exec
 from _pydevd_bundle.pydevd_frame_utils import FramesList
+from _pydevd_bundle.pydevd_utils import ScopeRequest
 
 
 class _AbstractVariable(object):
@@ -78,11 +79,11 @@ class _AbstractVariable(object):
 
         return var_data
 
-    def get_children_variables(self, fmt=None):
+    def get_children_variables(self, fmt=None, scope=None):
         raise NotImplementedError()
 
-    def get_child_variable_named(self, name, fmt=None):
-        for child_var in self.get_children_variables(fmt=fmt):
+    def get_child_variable_named(self, name, fmt=None, scope=None):
+        for child_var in self.get_children_variables(fmt=fmt, scope=scope):
             if child_var.get_name() == name:
                 return child_var
         return None
@@ -101,7 +102,7 @@ class _ObjectVariable(_AbstractVariable):
         self.evaluate_name = evaluate_name
 
     @overrides(_AbstractVariable.get_children_variables)
-    def get_children_variables(self, fmt=None):
+    def get_children_variables(self, fmt=None, scope=None):
         _type, _type_name, resolver = get_type(self.value)
 
         children_variables = []
@@ -202,9 +203,20 @@ class _FrameVariable(_AbstractVariable):
         return self.get_child_variable_named(name, fmt=fmt)
 
     @overrides(_AbstractVariable.get_children_variables)
-    def get_children_variables(self, fmt=None):
+    def get_children_variables(self, fmt=None, scope=None):
         children_variables = []
-        for key, val in dict_items(self.frame.f_locals):
+        if scope is not None:
+            assert isinstance(scope, ScopeRequest)
+            scope = scope.scope
+
+        if scope in ('locals', None):
+            dct = self.frame.f_locals
+        elif scope == 'globals':
+            dct = self.frame.f_globals
+        else:
+            raise AssertionError('Unexpected scope: %s' % (scope,))
+
+        for key, val in dict_items(dct):
             is_return_value = key == RETURN_VALUES_DICT
             if is_return_value:
                 for return_key, return_value in dict_iter_items(val):
