@@ -372,8 +372,18 @@ class JsonFacade(object):
 
         return self.get_name_to_var(name_to_scope['Locals'].variablesReference)
 
+    def get_globals_name_to_var(self, frame_id):
+        name_to_scope = self.get_name_to_scope(frame_id)
+
+        return self.get_name_to_var(name_to_scope['Globals'].variablesReference)
+
     def get_local_var(self, frame_id, var_name):
         ret = self.get_locals_name_to_var(frame_id)[var_name]
+        assert ret.name == var_name
+        return ret
+
+    def get_global_var(self, frame_id, var_name):
+        ret = self.get_globals_name_to_var(frame_id)[var_name]
         assert ret.name == var_name
         return ret
 
@@ -4033,6 +4043,21 @@ def test_send_json_message(case_setup):
 
         json_facade.wait_for_json_message(
             OutputEvent, lambda msg: msg.body.category == 'my_category2' and msg.body.output == 'some output 2')
+
+        writer.finished_ok = True
+
+
+def test_global_scope(case_setup):
+    with case_setup.test_file('_debugger_case_globals.py') as writer:
+        json_facade = JsonFacade(writer)
+        json_facade.write_set_breakpoints(writer.get_line_index_with_content('breakpoint here'))
+
+        json_facade.write_make_initial_run()
+        json_hit = json_facade.wait_for_thread_stopped()
+
+        local_var = json_facade.get_global_var(json_hit.frame_id, 'in_global_scope')
+        assert local_var.value == "'in_global_scope_value'"
+        json_facade.write_continue()
 
         writer.finished_ok = True
 
