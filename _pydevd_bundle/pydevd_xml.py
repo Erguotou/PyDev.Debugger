@@ -7,7 +7,7 @@ from _pydevd_bundle.pydevd_constants import dict_iter_items, dict_keys, IS_PY3K,
     DEFAULT_VALUE
 from _pydev_bundle.pydev_imports import quote
 from _pydevd_bundle.pydevd_extension_api import TypeResolveProvider, StrPresentationProvider
-from _pydevd_bundle.pydevd_utils import isinstance_checked, hasattr_checked
+from _pydevd_bundle.pydevd_utils import isinstance_checked, hasattr_checked, DAPGrouper
 
 try:
     import types
@@ -61,6 +61,8 @@ def _create_default_type_map():
         default_type_map.append((unicode, None))  # @UndefinedVariable
     except:
         pass  # not available on all python versions
+
+    default_type_map.append((DAPGrouper, pydevd_resolver.dapGrouperResolver))
 
     try:
         default_type_map.append((set, pydevd_resolver.setResolver))

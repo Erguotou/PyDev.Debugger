@@ -1,5 +1,5 @@
 from _pydev_bundle import pydev_log
-from _pydevd_bundle.pydevd_utils import hasattr_checked
+from _pydevd_bundle.pydevd_utils import hasattr_checked, ScopeRequest, DAPGrouper
 try:
     import StringIO
 except:
@@ -99,9 +99,16 @@ class DefaultResolver:
 
         lst = sorted(dict_iter_items(dct), key=lambda tup: sorted_attributes_key(tup[0]))
         if used___dict__:
-            return [(attr_name, attr_value, '.__dict__[%s]' % attr_name) for (attr_name, attr_value) in lst]
+            eval_name = '.__dict__[%s]'
         else:
-            return [(attr_name, attr_value, '.%s' % attr_name) for (attr_name, attr_value) in lst]
+            eval_name = '.%s'
+
+        ret = []
+        for attr_name, attr_value in lst:
+            entry = (attr_name, attr_value, eval_name % attr_name)
+            ret.append(entry)
+
+        return ret
 
     def get_dictionary(self, var, names=None, used___dict__=False):
         if MethodWrapperType:
@@ -183,12 +190,6 @@ class DefaultResolver:
         using obj.__dict__[name] instead of getattr(obj, name)
         '''
 
-        # TODO: Those should be options (would fix https://github.com/Microsoft/ptvsd/issues/66).
-        filter_private = False
-        filter_special = True
-        filter_function = True
-        filter_builtin = True
-
         if not names:
             names, used___dict__ = self.get_names(var)
         d = {}
@@ -197,44 +198,32 @@ class DefaultResolver:
         # optimize the operation by removing as many items as possible in the
         # first filters, leaving fewer items for later filters
 
-        if filter_builtin or filter_function:
-            for name in names:
-                try:
-                    name_as_str = name
-                    if name_as_str.__class__ != str:
-                        name_as_str = '%r' % (name_as_str,)
 
-                    if filter_special:
-                        if name_as_str.startswith('__') and name_as_str.endswith('__'):
-                            continue
+        for name in names:
+            try:
+                name_as_str = name
+                if name_as_str.__class__ != str:
+                    name_as_str = '%r' % (name_as_str,)
 
-                    if filter_private:
-                        if name_as_str.startswith('_') or name_as_str.endswith('__'):
-                            continue
-                    if not used___dict__:
-                        attr = getattr(var, name)
-                    else:
-                        attr = var.__dict__[name]
+                if not used___dict__:
+                    attr = getattr(var, name)
+                else:
+                    attr = var.__dict__[name]
+            except:
+                # if some error occurs getting it, let's put it to the user.
+                strIO = StringIO.StringIO()
+                traceback.print_exc(file=strIO)
+                attr = strIO.getvalue()
 
-                    # filter builtins?
-                    if filter_builtin:
-                        if inspect.isbuiltin(attr):
-                            continue
-
-                    # filter functions?
-                    if filter_function:
-                        if inspect.isroutine(attr) or isinstance(attr, MethodWrapperType):
-                            continue
-                except:
-                    # if some error occurs getting it, let's put it to the user.
-                    strIO = StringIO.StringIO()
-                    traceback.print_exc(file=strIO)
-                    attr = strIO.getvalue()
-
-                d[name_as_str] = attr
+            d[name_as_str] = attr
 
         return d, used___dict__
 
+
+class DAPGrouperResolver:
+
+    def get_contents_debug_adapter_protocol(self, obj, fmt=None):
+        return obj.get_contents_debug_adapter_protocol()
 
 #=======================================================================================================================
 # DictResolver
@@ -650,3 +639,4 @@ djangoFormResolver = DjangoFormResolver()
 dequeResolver = DequeResolver()
 orderedDictResolver = OrderedDictResolver()
 frameResolver = FrameResolver()
+dapGrouperResolver = DAPGrouperResolver()

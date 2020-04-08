@@ -5,13 +5,14 @@ from _pydevd_bundle.pydevd_constants import get_frame, dict_items, RETURN_VALUES
     dict_iter_items, ForkSafeLock
 from _pydevd_bundle.pydevd_xml import get_variable_details, get_type
 from _pydev_bundle.pydev_override import overrides
-from _pydevd_bundle.pydevd_resolver import sorted_attributes_key, TOO_LARGE_ATTR
+from _pydevd_bundle.pydevd_resolver import sorted_attributes_key, TOO_LARGE_ATTR, inspect,\
+    MethodWrapperType
 from _pydevd_bundle.pydevd_safe_repr import SafeRepr
 from _pydev_bundle import pydev_log
 from _pydevd_bundle import pydevd_vars
 from _pydev_bundle.pydev_imports import Exec
 from _pydevd_bundle.pydevd_frame_utils import FramesList
-from _pydevd_bundle.pydevd_utils import ScopeRequest
+from _pydevd_bundle.pydevd_utils import ScopeRequest, DAPGrouper
 
 
 class _AbstractVariable(object):
@@ -118,9 +119,52 @@ class _ObjectVariable(_AbstractVariable):
                 # No evaluate name in this case.
                 lst = [(key, value, None) for (key, value) in lst]
 
+            scope_to_grouper = {}
+
+            if isinstance(self.value, DAPGrouper):
+                new_lst = lst
+            else:
+                new_lst = []
+                # Now that we have the contents, group items.
+                for attr_name, attr_value, evaluate_name in lst:
+                    if attr_name.startswith('__') and attr_name.endswith('__'):
+                        scope = 'dunder variables'
+
+                    elif attr_name.startswith('_') or attr_name.endswith('__'):
+                        scope = 'protected variables'
+
+                    # filter functions?
+                    elif inspect.isroutine(attr_value) or isinstance(attr_value, MethodWrapperType):
+                        scope = 'function variables'
+
+                    # filter builtins?
+                    elif inspect.isbuiltin(attr_value):
+                        scope = 'builtin variables'
+
+                    else:
+                        scope = None
+
+                    entry = (attr_name, attr_value, evaluate_name)
+                    if scope is not None:
+                        if scope not in scope_to_grouper:
+                            grouper = DAPGrouper(scope)
+                            scope_to_grouper[scope] = grouper
+                        else:
+                            grouper = scope_to_grouper[scope]
+
+                        grouper.contents_debug_adapter_protocol.append(entry)
+                    else:
+                        new_lst.append((attr_name, attr_value, evaluate_name))
+
+                for scope in reversed(['dunder variables', 'function variables', 'builtin variables', 'private variables']):
+                    grouper = scope_to_grouper.get(scope)
+                    if grouper is not None:
+                        new_lst.insert(0, (scope, grouper, None))
+
+
             parent_evaluate_name = self.evaluate_name
             if parent_evaluate_name:
-                for key, val, evaluate_name in lst:
+                for key, val, evaluate_name in new_lst:
                     if evaluate_name is not None:
                         if callable(evaluate_name):
                             evaluate_name = evaluate_name(parent_evaluate_name)

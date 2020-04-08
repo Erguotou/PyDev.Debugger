@@ -320,3 +320,34 @@ class ScopeRequest(object):
 
     def __hash__(self):
         return hash((self.variable_reference, self.scope))
+
+
+class DAPGrouper(object):
+
+    __slots__ = ['variable_reference', 'scope', 'contents_debug_adapter_protocol']
+
+    def __init__(self, scope):
+        self.variable_reference = id(self)
+        self.scope = scope
+        self.contents_debug_adapter_protocol = []
+
+    def get_contents_debug_adapter_protocol(self):
+        return self.contents_debug_adapter_protocol[:]
+
+    def __eq__(self, o):
+        if isinstance(o, ScopeRequest):
+            return self.variable_reference == o.variable_reference and self.scope == o.scope
+
+        return False
+
+    def __ne__(self, o):
+        return not self == o
+
+    def __hash__(self):
+        return hash((self.variable_reference, self.scope))
+
+    def __repr__(self):
+        return ''
+
+    def __str__(self):
+        return ''
