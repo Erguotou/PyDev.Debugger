@@ -198,7 +198,6 @@ class DefaultResolver:
         # optimize the operation by removing as many items as possible in the
         # first filters, leaving fewer items for later filters
 
-
         for name in names:
             try:
                 name_as_str = name
@@ -224,6 +223,7 @@ class DAPGrouperResolver:
 
     def get_contents_debug_adapter_protocol(self, obj, fmt=None):
         return obj.get_contents_debug_adapter_protocol()
+
 
 #=======================================================================================================================
 # DictResolver
@@ -311,10 +311,10 @@ class DictResolver:
                 ret[TOO_LARGE_ATTR] = TOO_LARGE_MSG
                 break
 
-        ret['__len__'] = len(dict)
         # in case if the class extends built-in type and has some additional fields
         additional_fields = defaultResolver.get_dictionary(dict)
         ret.update(additional_fields)
+        ret['__len__'] = len(dict)
         return ret
 
 
@@ -385,10 +385,10 @@ class TupleResolver:  # to enumerate tuples and lists
                 d[TOO_LARGE_ATTR] = TOO_LARGE_MSG
                 break
 
-        d['__len__'] = len(var)
         # in case if the class extends built-in type and has some additional fields
         additional_fields = defaultResolver.get_dictionary(var)
         d.update(additional_fields)
+        d['__len__'] = len(var)
         return d
 
 
@@ -441,10 +441,10 @@ class SetResolver:
                 d[TOO_LARGE_ATTR] = TOO_LARGE_MSG
                 break
 
-        d['__len__'] = len(var)
         # in case if the class extends built-in type and has some additional fields
         additional_fields = defaultResolver.get_dictionary(var)
         d.update(additional_fields)
+        d['__len__'] = len(var)
         return d
 
     def change_var_from_name(self, container, name, new_value):
