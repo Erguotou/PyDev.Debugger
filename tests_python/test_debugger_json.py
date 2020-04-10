@@ -23,6 +23,7 @@ from tests_python.debug_constants import TEST_CHERRYPY, IS_PY2, TEST_DJANGO, TES
     IS_PY27, IS_CPYTHON, TEST_GEVENT
 from tests_python.debugger_unittest import (IS_JYTHON, IS_APPVEYOR, overrides,
     get_free_port, wait_for_condition)
+from _pydevd_bundle.pydevd_utils import DAPGrouper
 
 pytest_plugins = [
     str('tests_python.debugger_fixtures'),
@@ -1213,7 +1214,7 @@ def test_dict_ordered(case_setup):
         # : :type variables_response: VariablesResponse
 
         variables_response = json_facade.get_variables_response(ref)
-        assert [(d['name'], d['value']) for d in variables_response.body.variables if not d['name'].startswith('_OrderedDict')] == [
+        assert [(d['name'], d['value']) for d in variables_response.body.variables if (not d['name'].startswith('_OrderedDict')) and (d['name'] not in DAPGrouper.SCOPES_SORTED)] == [
             ('4', "'first'"), ('3', "'second'"), ('2', "'last'"), ('__len__', '3')]
 
         json_facade.write_continue()
@@ -1263,7 +1264,8 @@ def test_stack_and_variables_dict(case_setup):
         ]
 
         variables_response = json_facade.get_variables_response(dict_variable_reference)
-        assert variables_response.body.variables == [
+        check = [x for x in variables_response.body.variables if x['name'] not in DAPGrouper.SCOPES_SORTED]
+        assert check == [
             {'name': "'a'", 'value': '30', 'type': 'int', 'evaluateName': "variable_for_test_3['a']", 'variablesReference': 0 },
             {'name': "'b'", 'value': '20', 'type': 'int', 'evaluateName': "variable_for_test_3['b']", 'variablesReference': 0},
             {'name': '__len__', 'value': '2', 'type': 'int', 'evaluateName': 'len(variable_for_test_3)', 'variablesReference': 0, 'presentationHint': {'attributes': ['readOnly']}}
