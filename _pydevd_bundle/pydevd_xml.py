@@ -215,13 +215,13 @@ _TYPE_RESOLVE_HANDLER = TypeResolveHandler()
 
 """
 def get_type(o):
-    Receives object and returns a triple (typeObject, typeString, resolver).
+    Receives object and returns a triple (type_object, type_string, resolver).
 
     resolver != None means that variable is a container, and should be displayed as a hierarchy.
 
     Use the resolver to get its attributes.
 
-    All container objects should have a resolver.
+    All container objects (i.e.: dict, list, tuple, object, etc) should have a resolver.
 """
 get_type = _TYPE_RESOLVE_HANDLER.get_type
 
