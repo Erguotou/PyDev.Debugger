@@ -3,7 +3,7 @@
 """
 import pickle
 from _pydevd_bundle.pydevd_constants import get_frame, get_current_thread_id, xrange, IS_PY2, \
-    iter_chars, RETURN_VALUES_DICT, MethodWrapperType
+    iter_chars
 
 from _pydevd_bundle.pydevd_xml import ExceptionOnEvaluate, get_type, var_to_xml
 from _pydev_bundle import pydev_log
@@ -20,7 +20,7 @@ from _pydev_imps._pydev_saved_modules import threading
 import traceback
 from _pydevd_bundle import pydevd_save_locals
 from _pydev_bundle.pydev_imports import Exec, execfile
-from _pydevd_bundle.pydevd_utils import to_string, DAPGrouper
+from _pydevd_bundle.pydevd_utils import to_string
 
 SENTINEL_VALUE = []
 
@@ -120,48 +120,6 @@ def getVariable(dbg, thread_id, frame_id, scope, attrs):
             var = resolver.resolve(var, k)
 
     return var
-
-
-class InspectStub:
-
-    def isbuiltin(self, _args):
-        return False
-
-    def isroutine(self, object):
-        return False
-
-
-try:
-    import inspect
-except:
-    inspect = InspectStub()
-
-
-def get_var_scope(attr_name, attr_value, evaluate_name, handle_return_values):
-    if attr_name.startswith("'") and attr_name.endswith("'"):
-        attr_name = attr_name[1:-1]
-
-    if handle_return_values and attr_name == RETURN_VALUES_DICT:
-        return ''
-
-    elif attr_name == '__len__' and evaluate_name != '.__len__':
-        # Treat the __len__ we generate internally separate from the __len__ function
-        return ''
-
-    elif attr_name.startswith('__') and attr_name.endswith('__'):
-        return DAPGrouper.SCOPE_SPECIAL_VARS
-
-    elif attr_name.startswith('_') or attr_name.endswith('__'):
-        return DAPGrouper.SCOPE_PROTECTED_VARS
-
-    elif inspect.isroutine(attr_value) or isinstance(attr_value, MethodWrapperType):
-        return DAPGrouper.SCOPE_FUNCTION_VARS
-
-    elif inspect.isclass(attr_value):
-        return DAPGrouper.SCOPE_CLASS_VARS
-
-    else:
-        return ''
 
 
 def resolve_compound_variable_fields(dbg, thread_id, frame_id, scope, attrs):

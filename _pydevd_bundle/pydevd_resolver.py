@@ -1,5 +1,5 @@
 from _pydev_bundle import pydev_log
-from _pydevd_bundle.pydevd_utils import hasattr_checked
+from _pydevd_bundle.pydevd_utils import hasattr_checked, DAPGrouper
 try:
     import StringIO
 except:
@@ -9,7 +9,7 @@ from os.path import basename
 
 from functools import partial
 from _pydevd_bundle.pydevd_constants import dict_iter_items, dict_keys, xrange, IS_PY36_OR_GREATER, \
-    MethodWrapperType
+    MethodWrapperType, RETURN_VALUES_DICT
 from _pydevd_bundle.pydevd_safe_repr import SafeRepr
 
 # Note: 300 is already a lot to see in the outline (after that the user should really use the shell to get things)
@@ -618,3 +618,45 @@ dequeResolver = DequeResolver()
 orderedDictResolver = OrderedDictResolver()
 frameResolver = FrameResolver()
 dapGrouperResolver = DAPGrouperResolver()
+
+
+class InspectStub:
+
+    def isbuiltin(self, _args):
+        return False
+
+    def isroutine(self, object):
+        return False
+
+
+try:
+    import inspect
+except:
+    inspect = InspectStub()
+
+
+def get_var_scope(attr_name, attr_value, evaluate_name, handle_return_values):
+    if attr_name.startswith("'") and attr_name.endswith("'"):
+        attr_name = attr_name[1:-1]
+
+    if handle_return_values and attr_name == RETURN_VALUES_DICT:
+        return ''
+
+    elif attr_name == '__len__' and evaluate_name != '.__len__':
+        # Treat the __len__ we generate internally separate from the __len__ function
+        return ''
+
+    elif attr_name.startswith('__') and attr_name.endswith('__'):
+        return DAPGrouper.SCOPE_SPECIAL_VARS
+
+    elif attr_name.startswith('_') or attr_name.endswith('__'):
+        return DAPGrouper.SCOPE_PROTECTED_VARS
+
+    elif inspect.isroutine(attr_value) or isinstance(attr_value, MethodWrapperType):
+        return DAPGrouper.SCOPE_FUNCTION_VARS
+
+    elif inspect.isclass(attr_value):
+        return DAPGrouper.SCOPE_CLASS_VARS
+
+    else:
+        return ''
