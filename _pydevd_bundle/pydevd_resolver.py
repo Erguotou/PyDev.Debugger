@@ -636,8 +636,15 @@ except:
 
 
 def get_var_scope(attr_name, attr_value, evaluate_name, handle_return_values):
-    if attr_name.startswith("'") and attr_name.endswith("'"):
-        attr_name = attr_name[1:-1]
+    if attr_name.startswith("'"):
+        if attr_name.endswith("'"):
+            attr_name = attr_name[1:-1]
+        else:
+            i = attr_name.find("__' (")
+            if i >= 0:
+                # Handle attr_name such as: >>'__name__' (1732494379184)<<
+                attr_name = attr_name[1: i + 2]
+                print('attr name:', attr_name)
 
     if handle_return_values and attr_name == RETURN_VALUES_DICT:
         return ''

@@ -357,6 +357,7 @@ def var_to_xml(val, name, trim_if_too_big=True, additional_in_xml='', evaluate_f
     type_name, type_qualifier, is_exception_on_eval, resolver, value = get_variable_details(
         val, evaluate_full_value)
 
+    scope = get_var_scope(name, val, '', True)
     try:
         name = quote(name, '/>_= ')  # TODO: Fix PY-5834 without using quote
     except:
@@ -365,7 +366,7 @@ def var_to_xml(val, name, trim_if_too_big=True, additional_in_xml='', evaluate_f
     xml = '<var name="%s" type="%s" scope="%s" ' % (
         make_valid_xml_value(name),
         make_valid_xml_value(type_name),
-        get_var_scope(name, val, '', True)
+        scope,
     )
 
     if type_qualifier:
