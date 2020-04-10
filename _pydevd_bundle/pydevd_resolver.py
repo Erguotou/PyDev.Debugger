@@ -1,5 +1,5 @@
 from _pydev_bundle import pydev_log
-from _pydevd_bundle.pydevd_utils import hasattr_checked, ScopeRequest, DAPGrouper
+from _pydevd_bundle.pydevd_utils import hasattr_checked
 try:
     import StringIO
 except:
@@ -8,7 +8,8 @@ import traceback
 from os.path import basename
 
 from functools import partial
-from _pydevd_bundle.pydevd_constants import dict_iter_items, dict_keys, xrange, IS_PY36_OR_GREATER
+from _pydevd_bundle.pydevd_constants import dict_iter_items, dict_keys, xrange, IS_PY36_OR_GREATER, \
+    MethodWrapperType
 from _pydevd_bundle.pydevd_safe_repr import SafeRepr
 
 # Note: 300 is already a lot to see in the outline (after that the user should really use the shell to get things)
@@ -26,23 +27,6 @@ class UnableToResolveVariableException(Exception):
     pass
 
 
-#=======================================================================================================================
-# InspectStub
-#=======================================================================================================================
-class InspectStub:
-
-    def isbuiltin(self, _args):
-        return False
-
-    def isroutine(self, object):
-        return False
-
-
-try:
-    import inspect
-except:
-    inspect = InspectStub()
-
 try:
     from collections import OrderedDict
 except:
@@ -52,12 +36,6 @@ try:
     import java.lang  # @UnresolvedImport
 except:
     pass
-
-# types does not include a MethodWrapperType
-try:
-    MethodWrapperType = type([].__str__)
-except:
-    MethodWrapperType = None
 
 #=======================================================================================================================
 # See: pydevd_extension_api module for resolver interface

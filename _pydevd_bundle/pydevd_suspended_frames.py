@@ -5,8 +5,7 @@ from _pydevd_bundle.pydevd_constants import get_frame, dict_items, RETURN_VALUES
     dict_iter_items, ForkSafeLock
 from _pydevd_bundle.pydevd_xml import get_variable_details, get_type
 from _pydev_bundle.pydev_override import overrides
-from _pydevd_bundle.pydevd_resolver import sorted_attributes_key, TOO_LARGE_ATTR, inspect, \
-    MethodWrapperType
+from _pydevd_bundle.pydevd_resolver import sorted_attributes_key, TOO_LARGE_ATTR
 from _pydevd_bundle.pydevd_safe_repr import SafeRepr
 from _pydev_bundle import pydev_log
 from _pydevd_bundle import pydevd_vars
@@ -98,31 +97,7 @@ class _AbstractVariable(object):
             new_lst = []
             # Now that we have the contents, group items.
             for attr_name, attr_value, evaluate_name in lst:
-                check_name = attr_name
-                if check_name.startswith("'") and check_name.endswith("'"):
-                    check_name = check_name[1:-1]
-
-                if handle_return_values and attr_name == RETURN_VALUES_DICT:
-                    scope = None
-
-                elif check_name == '__len__' and evaluate_name != '.__len__':
-                    # Treat the __len__ we generate internally separate from the __len__ function
-                    scope = None
-
-                elif check_name.startswith('__') and check_name.endswith('__'):
-                    scope = DAPGrouper.SCOPE_SPECIAL_VARS
-
-                elif check_name.startswith('_') or check_name.endswith('__'):
-                    scope = DAPGrouper.SCOPE_PROTECTED_VARS
-
-                elif inspect.isroutine(attr_value) or isinstance(attr_value, MethodWrapperType):
-                    scope = DAPGrouper.SCOPE_FUNCTION_VARS
-
-                elif inspect.isclass(attr_value):
-                    scope = DAPGrouper.SCOPE_CLASS_VARS
-
-                else:
-                    scope = None
+                scope = pydevd_vars.get_var_scope(attr_name, attr_value, evaluate_name, handle_return_values)
 
                 entry = (attr_name, attr_value, evaluate_name)
                 if scope is not None:
@@ -142,8 +117,6 @@ class _AbstractVariable(object):
                     new_lst.insert(0, (scope, grouper, None))
 
         return new_lst
-
-
 
 
 class _ObjectVariable(_AbstractVariable):

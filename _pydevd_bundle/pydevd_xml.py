@@ -8,6 +8,7 @@ from _pydevd_bundle.pydevd_constants import dict_iter_items, dict_keys, IS_PY3K,
 from _pydev_bundle.pydev_imports import quote
 from _pydevd_bundle.pydevd_extension_api import TypeResolveProvider, StrPresentationProvider
 from _pydevd_bundle.pydevd_utils import isinstance_checked, hasattr_checked, DAPGrouper
+from _pydevd_bundle.pydevd_vars import get_var_scope
 
 try:
     import types
@@ -361,7 +362,11 @@ def var_to_xml(val, name, trim_if_too_big=True, additional_in_xml='', evaluate_f
     except:
         pass
 
-    xml = '<var name="%s" type="%s" ' % (make_valid_xml_value(name), make_valid_xml_value(type_name))
+    xml = '<var name="%s" type="%s" scope="%s"' % (
+        make_valid_xml_value(name),
+        make_valid_xml_value(type_name),
+        get_var_scope(name, val, '', True)
+    )
 
     if type_qualifier:
         xml_qualifier = 'qualifier="%s"' % make_valid_xml_value(type_qualifier)
