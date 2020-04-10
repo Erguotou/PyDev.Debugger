@@ -89,6 +89,62 @@ class _AbstractVariable(object):
                 return child_var
         return None
 
+    def _group_entries(self, lst, handle_return_values):
+        scope_to_grouper = {}
+
+        if isinstance(self.value, DAPGrouper):
+            new_lst = lst
+        else:
+            new_lst = []
+            # Now that we have the contents, group items.
+            for attr_name, attr_value, evaluate_name in lst:
+                check_name = attr_name
+                if check_name.startswith("'") and check_name.endswith("'"):
+                    check_name = check_name[1:-1]
+
+                if handle_return_values and attr_name == RETURN_VALUES_DICT:
+                    scope = None
+
+                elif check_name == '__len__' and evaluate_name != '.__len__':
+                    # Treat the __len__ we generate internally separate from the __len__ function
+                    scope = None
+
+                elif check_name.startswith('__') and check_name.endswith('__'):
+                    scope = DAPGrouper.SCOPE_SPECIAL_VARS
+
+                elif check_name.startswith('_') or check_name.endswith('__'):
+                    scope = DAPGrouper.SCOPE_PROTECTED_VARS
+
+                elif inspect.isroutine(attr_value) or isinstance(attr_value, MethodWrapperType):
+                    scope = DAPGrouper.SCOPE_FUNCTION_VARS
+
+                elif inspect.isclass(attr_value):
+                    scope = DAPGrouper.SCOPE_CLASS_VARS
+
+                else:
+                    scope = None
+
+                entry = (attr_name, attr_value, evaluate_name)
+                if scope is not None:
+                    if scope not in scope_to_grouper:
+                        grouper = DAPGrouper(scope)
+                        scope_to_grouper[scope] = grouper
+                    else:
+                        grouper = scope_to_grouper[scope]
+
+                    grouper.contents_debug_adapter_protocol.append(entry)
+                else:
+                    new_lst.append((attr_name, attr_value, evaluate_name))
+
+            for scope in reversed(DAPGrouper.SCOPES_SORTED):
+                grouper = scope_to_grouper.get(scope)
+                if grouper is not None:
+                    new_lst.insert(0, (scope, grouper, None))
+
+        return new_lst
+
+
+
 
 class _ObjectVariable(_AbstractVariable):
 
@@ -119,56 +175,10 @@ class _ObjectVariable(_AbstractVariable):
                 # No evaluate name in this case.
                 lst = [(key, value, None) for (key, value) in lst]
 
-            scope_to_grouper = {}
-
-            if isinstance(self.value, DAPGrouper):
-                new_lst = lst
-            else:
-                new_lst = []
-                # Now that we have the contents, group items.
-                for attr_name, attr_value, evaluate_name in lst:
-                    if attr_name == '__len__':
-                        scope = None  # Treat len separately from the rest.
-
-                    elif attr_name.startswith('__') and attr_name.endswith('__'):
-                        scope = DAPGrouper.SCOPE_DUNDER_VARS
-
-                    elif attr_name.startswith('_') or attr_name.endswith('__'):
-                        scope = DAPGrouper.SCOPE_PROTECTED_VARS
-
-                    elif inspect.isroutine(attr_value) or isinstance(attr_value, MethodWrapperType):
-                        scope = DAPGrouper.SCOPE_FUNCTION_VARS
-
-                    elif inspect.isbuiltin(attr_value):
-                        scope = DAPGrouper.SCOPE_BUILTIN_VARS
-
-                    else:
-                        scope = None
-
-                    entry = (attr_name, attr_value, evaluate_name)
-                    if scope is not None:
-                        if scope not in scope_to_grouper:
-                            grouper = DAPGrouper(scope)
-                            scope_to_grouper[scope] = grouper
-                        else:
-                            grouper = scope_to_grouper[scope]
-
-                        grouper.contents_debug_adapter_protocol.append(entry)
-                    else:
-                        new_lst.append((attr_name, attr_value, evaluate_name))
-
-                for scope in reversed(DAPGrouper.SCOPES_SORTED):
-                    grouper = scope_to_grouper.get(scope)
-                    if grouper is not None:
-                        if len(grouper.contents_debug_adapter_protocol) == 1:
-                            # If there's only 1 entry, there's not much point in adding the grouper.
-                            new_lst.insert(0, grouper.contents_debug_adapter_protocol[0])
-                        else:
-                            new_lst.insert(0, (scope, grouper, None))
-
+            lst = self._group_entries(lst, handle_return_values=False)
             parent_evaluate_name = self.evaluate_name
             if parent_evaluate_name:
-                for key, val, evaluate_name in new_lst:
+                for key, val, evaluate_name in lst:
                     if evaluate_name is not None:
                         if callable(evaluate_name):
                             evaluate_name = evaluate_name(parent_evaluate_name)
@@ -264,7 +274,9 @@ class _FrameVariable(_AbstractVariable):
         else:
             raise AssertionError('Unexpected scope: %s' % (scope,))
 
-        for key, val in dict_items(dct):
+        lst = self._group_entries([(x[0], x[1], None) for x in dict_items(dct)], handle_return_values=True)
+
+        for key, val, _ in lst:
             is_return_value = key == RETURN_VALUES_DICT
             if is_return_value:
                 for return_key, return_value in dict_iter_items(val):

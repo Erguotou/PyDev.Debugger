@@ -324,16 +324,16 @@ class ScopeRequest(object):
 
 class DAPGrouper(object):
 
-    SCOPE_DUNDER_VARS = 'dunder variables'
+    SCOPE_SPECIAL_VARS = 'special variables'
     SCOPE_PROTECTED_VARS = 'protected variables'
     SCOPE_FUNCTION_VARS = 'function variables'
-    SCOPE_BUILTIN_VARS = 'builtin variables'
+    SCOPE_CLASS_VARS = 'class variables'
 
     SCOPES_SORTED = [
-        SCOPE_DUNDER_VARS,
+        SCOPE_SPECIAL_VARS,
         SCOPE_PROTECTED_VARS,
         SCOPE_FUNCTION_VARS,
-        SCOPE_BUILTIN_VARS,
+        SCOPE_CLASS_VARS,
     ]
 
     __slots__ = ['variable_reference', 'scope', 'contents_debug_adapter_protocol']

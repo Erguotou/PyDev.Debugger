@@ -126,7 +126,7 @@ DONT_TRACE = {
     'pydevd_process_net_command_json.py': PYDEV_FILE,
     'pydevd_referrers.py': PYDEV_FILE,
     'pydevd_reload.py': PYDEV_FILE,
-#     'pydevd_resolver.py': PYDEV_FILE,
+    'pydevd_resolver.py': PYDEV_FILE,
     'pydevd_safe_repr.py': PYDEV_FILE,
     'pydevd_save_locals.py': PYDEV_FILE,
     'pydevd_schema.py': PYDEV_FILE,
