@@ -363,11 +363,7 @@ def var_to_xml(val, name, trim_if_too_big=True, additional_in_xml='', evaluate_f
     except:
         pass
 
-    xml = '<var name="%s" type="%s" scope="%s" ' % (
-        make_valid_xml_value(name),
-        make_valid_xml_value(type_name),
-        scope,
-    )
+    xml = '<var name="%s" type="%s" ' % (make_valid_xml_value(name), make_valid_xml_value(type_name))
 
     if type_qualifier:
         xml_qualifier = 'qualifier="%s"' % make_valid_xml_value(type_qualifier)
@@ -392,4 +388,4 @@ def var_to_xml(val, name, trim_if_too_big=True, additional_in_xml='', evaluate_f
         else:
             xml_container = ''
 
-    return ''.join((xml, xml_qualifier, xml_value, xml_container, additional_in_xml, ' />\n'))
+    return ''.join((xml, xml_qualifier, xml_value, xml_container, additional_in_xml, ' scope="', scope, '"', ' />\n'))
