@@ -5,7 +5,7 @@ from _pydevd_bundle.pydevd_constants import get_frame, dict_items, RETURN_VALUES
     dict_iter_items, ForkSafeLock
 from _pydevd_bundle.pydevd_xml import get_variable_details, get_type
 from _pydev_bundle.pydev_override import overrides
-from _pydevd_bundle.pydevd_resolver import sorted_attributes_key, TOO_LARGE_ATTR
+from _pydevd_bundle.pydevd_resolver import sorted_attributes_key, TOO_LARGE_ATTR, get_var_scope
 from _pydevd_bundle.pydevd_safe_repr import SafeRepr
 from _pydev_bundle import pydev_log
 from _pydevd_bundle import pydevd_vars
@@ -97,10 +97,10 @@ class _AbstractVariable(object):
             new_lst = []
             # Now that we have the contents, group items.
             for attr_name, attr_value, evaluate_name in lst:
-                scope = pydevd_vars.get_var_scope(attr_name, attr_value, evaluate_name, handle_return_values)
+                scope = get_var_scope(attr_name, attr_value, evaluate_name, handle_return_values)
 
                 entry = (attr_name, attr_value, evaluate_name)
-                if scope is not None:
+                if scope:
                     if scope not in scope_to_grouper:
                         grouper = DAPGrouper(scope)
                         scope_to_grouper[scope] = grouper
